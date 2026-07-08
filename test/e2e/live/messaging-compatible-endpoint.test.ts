@@ -18,7 +18,6 @@ import { resultText } from "../fixtures/clients/command.ts";
 import type { HostCliClient } from "../fixtures/clients/host.ts";
 import { type SandboxClient, validateSandboxName } from "../fixtures/clients/sandbox.ts";
 import { expect, test } from "../fixtures/e2e-test.ts";
-import { discoverHostAddress } from "../fixtures/host-address.ts";
 import {
   closeServer,
   writeJsonResponse as jsonResponse,
@@ -262,10 +261,6 @@ async function startCompatibleMock(
 
   await mock.close();
   throw new Error("compatible endpoint mock failed to answer /v1/models");
-}
-
-async function hostAddressForSandbox(host: HostCliClient): Promise<string> {
-  return (await discoverHostAddress(host)).address;
 }
 
 async function sourceCliAvailable(host: HostCliClient): Promise<boolean> {
@@ -582,11 +577,15 @@ test("messaging compatible endpoint routes Telegram-enabled OpenClaw through inf
     await compatibleMock.close();
   });
 
-  const hostAddress = await hostAddressForSandbox(host);
-  const endpointUrl = `http://${hostAddress}:${new URL(compatibleMock.localBaseUrl).port}/v1`;
+  const endpointUrl = `http://host.openshell.internal:${new URL(compatibleMock.localBaseUrl).port}/v1`;
   const hostReachability = await host.command(
     "curl",
-    ["-sf", "-H", `Authorization: Bearer ${COMPATIBLE_KEY}`, `${endpointUrl}/models`],
+    [
+      "-sf",
+      "-H",
+      `Authorization: Bearer ${COMPATIBLE_KEY}`,
+      `${compatibleMock.localBaseUrl}/models`,
+    ],
     {
       artifactName: "compatible-endpoint-host-reachability",
       env: commandEnv(),
